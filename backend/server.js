@@ -36,7 +36,7 @@ async function queryDB(sql) {
 
 // 1. Inventory Status
 app.get('/api/inventory', async (req, res) => {
-    const data = await queryDB('SELECT Material_Name, Current_Stock, Unit FROM Raw_Materials ORDER BY Current_Stock ASC');
+    const data = await queryDB('SELECT Material_ID, Material_Name, Unit, Cost_Per_Unit, Current_Stock FROM Raw_Materials ORDER BY Current_Stock ASC');
     if (data) res.json(data);
     else res.status(500).json({ error: 'Database error' });
 });
@@ -76,6 +76,83 @@ app.get('/api/forecasting', async (req, res) => {
     `);
     if (data) res.json(data);
     else res.status(500).json({ error: 'Database error' });
+});
+
+// 5. Low-Stock Alerts (Stored Procedure CALL LowStockAlert())
+app.get('/api/alerts/low-stock', async (req, res) => {
+    try {
+        const [rows] = await pool.query('CALL LowStockAlert()');
+        if (rows && rows[0]) {
+            res.json(rows[0]);
+        } else {
+            res.json([]);
+        }
+    } catch (err) {
+        console.error("Procedure LowStockAlert failed:", err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// 6. Get All Suppliers
+app.get('/api/suppliers', async (req, res) => {
+    const data = await queryDB('SELECT Supplier_ID, Supplier_Name FROM Suppliers ORDER BY Supplier_Name ASC');
+    if (data) res.json(data);
+    else res.status(500).json({ error: 'Database error' });
+});
+
+// 7. Restock Inventory (POST payload triggers automatic Stock update via Trigger)
+app.post('/api/inventory/replenish', async (req, res) => {
+    const { supplierId, materialId, quantity, unitPrice } = req.body;
+    if (!supplierId || !materialId || !quantity || !unitPrice) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+    
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Insert into Purchase_Orders
+        const orderDate = new Date().toISOString().split('T')[0];
+        const expectedDelivery = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        const [poResult] = await connection.query(
+            'INSERT INTO Purchase_Orders (Supplier_ID, Order_Date, Expected_Delivery, Status) VALUES (?, ?, ?, ?)',
+            [supplierId, orderDate, expectedDelivery, 'Pending']
+        );
+        const poId = poResult.insertId;
+
+        // 2. Insert into Purchase_Order_Details (This will fire the UpdateStock database trigger!)
+        await connection.query(
+            'INSERT INTO Purchase_Order_Details (PO_ID, Material_ID, Quantity, Unit_Price) VALUES (?, ?, ?, ?)',
+            [poId, materialId, quantity, unitPrice]
+        );
+
+        await connection.commit();
+        res.json({ success: true, message: 'Stock replenishment triggered successfully via database trigger!', poId });
+    } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Transaction failed, rolled back:", err);
+        res.status(500).json({ error: 'Failed to complete transaction' });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 8. Get Supplier Performance Summary (Stored Procedure CALL GetSupplierPerformanceSummary(?))
+app.get('/api/suppliers/performance/:id', async (req, res) => {
+    const supplierId = req.params.id;
+    try {
+        const [rows] = await pool.query('CALL GetSupplierPerformanceSummary(?)', [supplierId]);
+        if (rows && rows[0]) {
+            res.json(rows[0]);
+        } else {
+            res.json([]);
+        }
+    } catch (err) {
+        console.error("Procedure GetSupplierPerformanceSummary failed:", err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
 // Start Server
