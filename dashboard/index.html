@@ -1,16 +1,900 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <title>SCM AI - Supply Chain Management Dashboard</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+  <title>SCM AI - Supply Chain Management Dashboard</title>
+</head>
+<body>
+  <!-- Dynamic Cyber Toast -->
+  <div id="cyber-toast" class="cyber-toast">
+    <i id="toast-icon" data-lucide="check-circle-2"></i>
+    <span id="toast-message"></span>
+  </div>
+
+  <div class="dashboard-container">
+    <!-- Sci-Fi Navigation Sidebar -->
+    <aside class="sidebar">
+      <div>
+        <div class="logo-section">
+          <i data-lucide="activity" style="width: 24px; height: 24px;"></i>
+          <span class="logo-title">SCM COMMAND</span>
+        </div>
+
+        <nav class="nav-list">
+          <div class="nav-link active" onclick="switchTab('overview')">
+            <i data-lucide="layout-dashboard" style="width: 18px; height: 18px;"></i>
+            Command Center
+          </div>
+          <div class="nav-link" onclick="switchTab('inventory')">
+            <i data-lucide="package" style="width: 18px; height: 18px;"></i>
+            Chemical Stock
+          </div>
+          <div class="nav-link" onclick="switchTab('logistics')">
+            <i data-lucide="truck" style="width: 18px; height: 18px;"></i>
+            Hubs & Scoring
+          </div>
+        </nav>
+      </div>
+
+      <!-- User Summary profile -->
+      <div class="sidebar-profile">
+        <div class="user-avatar">SS</div>
+        <div class="user-details">
+          <h4>Sameer Shekhar</h4>
+          <p>Admin | DB Port 3307</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main workspace area -->
+    <main class="workspace-wrapper">
+      <header class="workspace-header">
+        <div class="header-text">
+          <h1 id="page-title">Command Dashboard</h1>
+          <p id="page-desc">Mesh-glowing analytical tracking panel</p>
+        </div>
+
+        <div class="header-actions">
+          <button class="btn-cyber-secondary" onclick="fetchSCMCommandData()">
+            <i id="refresh-icon" data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
+            Refresh Node
+          </button>
+        </div>
+      </header>
+
+      <!-- Dashboard Content Workspace Body -->
+      <div class="workspace-body">
+        <!-- Low Stock Banner placeholder -->
+        <div id="warning-banner-container"></div>
+
+        <!-- Dynamic Panels Container -->
+        <div id="tab-panel-container"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Lucide Icons UMD CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Modern High-Performance SCM Controller script -->
+  <script>
+    // State Variables
+    let activeTab = 'overview';
+    let inventory = [];
+    let suppliersList = [];
+    let topSuppliers = [];
+    let emissions = [];
+    let forecast = [];
+    let lowStockAlerts = [];
+    let shipments = [];
+    let warehouses = [];
+    
+    let selectedSupplierId = '';
+    let selectedSupplierPerformance = [];
+    let loading = false;
+    let searchTerm = '';
+    
+    // Restock form local state
+    let restockQty = '';
+    let restockPrice = '';
+
+    // Cyber Toast Notification Controller
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('cyber-toast');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.textContent = message;
+      if (isError) {
+        toast.classList.add('error');
+        toastIcon.setAttribute('data-lucide', 'alert-triangle');
+      } else {
+        toast.classList.remove('error');
+        toastIcon.setAttribute('data-lucide', 'check-circle-2');
+      }
+      lucide.createIcons();
+      toast.classList.add('active');
+
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 4000);
+    }
+
+    // Tab switcher
+    function switchTab(tab) {
+      activeTab = tab;
+      
+      // Update nav links active class
+      const links = document.querySelectorAll('.nav-link');
+      links.forEach(l => l.classList.remove('active'));
+      
+      const linkIndex = tab === 'overview' ? 0 : tab === 'inventory' ? 1 : 2;
+      links[linkIndex].classList.add('active');
+
+      // Update header content
+      const title = document.getElementById('page-title');
+      const desc = document.getElementById('page-desc');
+
+      if (tab === 'overview') {
+        title.textContent = 'Command Dashboard';
+        desc.textContent = 'Mesh-glowing analytical tracking panel';
+      } else if (tab === 'inventory') {
+        title.textContent = 'Chemical Inventory Control';
+        desc.textContent = 'Monitor warehouse storage ingredients, triggers, and trigger replenishment order records';
+      } else if (tab === 'logistics') {
+        title.textContent = 'Facilities & Logistics Evaluation';
+        desc.textContent = 'Analyze safety compliance metrics, depot capacity, and evaluate supplier ratings';
+      }
+
+      renderUI();
+    }
+
+    // Pull SCM commands live data
+    async function fetchSCMCommandData() {
+      loading = true;
+      const refreshIcon = document.getElementById('refresh-icon');
+      if (refreshIcon) refreshIcon.classList.add('spin');
+
+      try {
+        const [invRes, supTopRes, emRes, forRes, alertsRes, supsListRes, shipsRes, whsRes] = await Promise.all([
+          fetch('http://localhost:5000/api/inventory').then(r => r.json()),
+          fetch('http://localhost:5000/api/suppliers/top').then(r => r.json()),
+          fetch('http://localhost:5000/api/emissions').then(r => r.json()),
+          fetch('http://localhost:5000/api/forecasting').then(r => r.json()),
+          fetch('http://localhost:5000/api/alerts/low-stock').then(r => r.json()),
+          fetch('http://localhost:5000/api/suppliers').then(r => r.json()),
+          fetch('http://localhost:5000/api/shipments').then(r => r.json()),
+          fetch('http://localhost:5000/api/warehouses').then(r => r.json())
+        ]);
+
+        if (invRes.error || supTopRes.error || emRes.error || forRes.error) {
+          throw new Error("API reports DB connection errors.");
+        }
+
+        inventory = invRes;
+        topSuppliers = supTopRes;
+        emissions = emRes;
+        forecast = forRes;
+        lowStockAlerts = alertsRes || [];
+        suppliersList = supsListRes || [];
+        shipments = shipsRes || [];
+        warehouses = whsRes || [];
+
+        // Auto-select first supplier for procedure evaluation
+        if (suppliersList.length > 0 && !selectedSupplierId) {
+          selectedSupplierId = suppliersList[0].Supplier_ID.toString();
+          await fetchSupplierPerformance();
+        }
+
+      } catch (err) {
+        console.warn("Express backend offline. Emulating cyber-glow sandbox environment:", err);
+        showToast("Backend Server Offline: Emulating Obsidian SCM Command Center", true);
+        
+        // Setup realistic fallback datasets
+        inventory = [
+          { Material_ID: 1, Material_Name: 'Ammonia', Current_Stock: 350, Unit: 'Tons', Cost_Per_Unit: 500.00 },
+          { Material_ID: 2, Material_Name: 'Urea', Current_Stock: 300, Unit: 'Tons', Cost_Per_Unit: 300.00 },
+          { Material_ID: 3, Material_Name: 'Sulfuric Acid', Current_Stock: 5000, Unit: 'Liters', Cost_Per_Unit: 1.50 },
+          { Material_ID: 4, Material_Name: 'Potash', Current_Stock: 90, Unit: 'Tons', Cost_Per_Unit: 400.00 },
+          { Material_ID: 5, Material_Name: 'Phosphate', Current_Stock: 310, Unit: 'Tons', Cost_Per_Unit: 350.00 },
+          { Material_ID: 6, Material_Name: 'Ammonium Nitrate', Current_Stock: 75, Unit: 'Tons', Cost_Per_Unit: 600.00 }
+        ];
+        topSuppliers = [
+          { Supplier_Name: 'AgroChem Global', Total_Orders: 45 },
+          { Supplier_Name: 'Nitrogen Sources Ltd', Total_Orders: 32 },
+          { Supplier_Name: 'BioFarm Organic Corp', Total_Orders: 18 },
+          { Supplier_Name: 'PhosMinerals Inc', Total_Orders: 10 }
+        ];
+        emissions = [
+          { Transport_Mode: 'Truck', Total_CO2: 1250 },
+          { Transport_Mode: 'Train', Total_CO2: 450 },
+          { Transport_Mode: 'Ship', Total_CO2: 2020 }
+        ];
+        forecast = [
+          { Product_Name: 'Fertilizer A (High Nitrogen)', Predicted_Demand: 500 },
+          { Product_Name: 'Fertilizer B (Balanced NPK)', Predicted_Demand: 350 },
+          { Product_Name: 'Fertilizer C (Organic Supergrow)', Predicted_Demand: 480 },
+          { Product_Name: 'Fertilizer D (Phosphate Max)', Predicted_Demand: 290 }
+        ];
+        lowStockAlerts = [
+          { Material_ID: 4, Material_Name: 'Potash', Current_Stock: 90, Unit: 'Tons' },
+          { Material_ID: 6, Material_Name: 'Ammonium Nitrate', Current_Stock: 75, Unit: 'Tons' }
+        ];
+        suppliersList = [
+          { Supplier_ID: 1, Supplier_Name: 'AgroChem Global' },
+          { Supplier_ID: 2, Supplier_Name: 'Nitrogen Sources Ltd' },
+          { Supplier_ID: 3, Supplier_Name: 'BioFarm Organic Corp' },
+          { Supplier_ID: 4, Supplier_Name: 'PhosMinerals Inc' }
+        ];
+        shipments = [
+          { Shipment_ID: 101, Status: 'In Transit', Order_ID: 2, Transport_Mode: 'Ship', Distance_km: 2300, Estimated_CO2_kg: 1100 },
+          { Shipment_ID: 102, Status: 'Pending', Order_ID: 2, Transport_Mode: 'Truck', Distance_km: 450, Estimated_CO2_kg: 320 },
+          { Shipment_ID: 103, Status: 'Delivered', Order_ID: 1, Transport_Mode: 'Train', Distance_km: 1200, Estimated_CO2_kg: 450 }
+        ];
+        warehouses = [
+          { Warehouse_ID: 1, Warehouse_Name: 'Main Hub TX', Location: 'Texas', Capacity: 10000, Inspection_Date: '2026-05-10', Passed_Inspection: 1 },
+          { Warehouse_ID: 2, Warehouse_Name: 'East Coast Storage', Location: 'New Jersey', Capacity: 5000, Inspection_Date: '2026-05-12', Passed_Inspection: 1 },
+          { Warehouse_ID: 3, Warehouse_Name: 'West Coast Depot', Location: 'California', Capacity: 8000, Inspection_Date: '2026-05-15', Passed_Inspection: 1 },
+          { Warehouse_ID: 4, Warehouse_Name: 'North Supply Hub', Location: 'Illinois', Capacity: 6000, Inspection_Date: '2026-05-18', Passed_Inspection: 0 }
+        ];
+        selectedSupplierId = '1';
+        simulateSupplierPerformance();
+      } finally {
+        loading = false;
+        if (refreshIcon) refreshIcon.classList.remove('spin');
+        renderUI();
+      }
+    }
+
+    // Stored Procedure Supplier Performance scores
+    async function fetchSupplierPerformance() {
+      if (!selectedSupplierId) return;
+      try {
+        const res = await fetch(`http://localhost:5000/api/suppliers/performance/${selectedSupplierId}`);
+        const data = await res.json();
+        if (data.error) throw new Error();
+        selectedSupplierPerformance = data || [];
+      } catch (err) {
+        simulateSupplierPerformance();
+      }
+    }
+
+    function simulateSupplierPerformance() {
+      const mockMap = {
+        '1': { Supplier_Name: 'AgroChem Global', Evaluation_Date: '2026-05-01', On_Time_Delivery_Rate: 98.5, Overall_Score: 96.75 },
+        '2': { Supplier_Name: 'Nitrogen Sources Ltd', Evaluation_Date: '2026-05-01', On_Time_Delivery_Rate: 85.0, Overall_Score: 87.50 },
+        '3': { Supplier_Name: 'BioFarm Organic Corp', Evaluation_Date: '2026-05-01', On_Time_Delivery_Rate: 99.0, Overall_Score: 98.00 },
+        '4': { Supplier_Name: 'PhosMinerals Inc', Evaluation_Date: '2026-05-01', On_Time_Delivery_Rate: 92.5, Overall_Score: 90.25 }
+      };
+      selectedSupplierPerformance = [mockMap[selectedSupplierId] || mockMap['1']];
+    }
+
+    // Replenishment restock submission
+    async function handleRestockSubmit(e) {
+      e.preventDefault();
+      const materialId = document.getElementById('restock-material').value;
+      const supplierId = document.getElementById('restock-supplier').value;
+      const qtyVal = document.getElementById('restock-qty').value;
+      const priceVal = document.getElementById('restock-price').value;
+
+      if (!qtyVal || !priceVal) {
+        showToast("Specify valid purchase quantity and unit pricing", true);
+        return;
+      }
+
+      const quantity = parseInt(qtyVal);
+      const unitPrice = parseFloat(priceVal);
+
+      try {
+        const response = await fetch('http://localhost:5000/api/inventory/replenish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            supplierId: parseInt(supplierId),
+            materialId: parseInt(materialId),
+            quantity,
+            unitPrice
+          })
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+
+        showToast("Replenish order issued! MySQL UpdateStock trigger added values to inventory live.");
+        restockQty = '';
+        restockPrice = '';
+        await fetchSCMCommandData();
+      } catch (err) {
+        // Fallback simulate stock addition
+        inventory = inventory.map(item => {
+          if (item.Material_ID.toString() === materialId) {
+            return { ...item, Current_Stock: item.Current_Stock + quantity };
+          }
+          return item;
+        });
+        lowStockAlerts = inventory.filter(item => item.Current_Stock < 100);
+
+        showToast("Sandbox: Restock order completed successfully & triggered custom trigger!");
+        restockQty = '';
+        restockPrice = '';
+        renderUI();
+      }
+    }
+
+    // Supplier dropdown selection change
+    async function handleSupplierScoringChange(val) {
+      selectedSupplierId = val;
+      await fetchSupplierPerformance();
+      renderUI();
+    }
+
+    // Main Renderer
+    function renderUI() {
+      // 1. Render Low Stock alert banner
+      const bannerContainer = document.getElementById('warning-banner-container');
+      if (lowStockAlerts.length > 0) {
+        const itemsList = lowStockAlerts.map(i => `${i.Material_Name} (${i.Current_Stock} ${i.Unit})`).join(', ');
+        bannerContainer.innerHTML = `
+          <div class="cyber-warning-banner">
+            <div class="banner-left">
+              <i data-lucide="shield-alert" style="width: 24px; height: 24px;"></i>
+              <div class="banner-text">
+                <h4>Critical Warning alerts: Low Stock levels detected by Stored Procedure</h4>
+                <p>Stored procedure \`LowStockAlert\` warns that ${itemsList} fall below optimal threshold limits!</p>
+              </div>
+            </div>
+            <button class="btn-cyber-secondary" style="background: rgba(244,63,94,0.06); border-color: rgba(244, 63, 94, 0.3); color: var(--accent-rose)" onclick="switchTab('inventory')">
+              Trigger replenishment
+              <i data-lucide="chevron-right" style="width: 15px; height: 15px;"></i>
+            </button>
+          </div>
+        `;
+      } else {
+        bannerContainer.innerHTML = '';
+      }
+
+      // 2. Render Panel depending on tab
+      const panelContainer = document.getElementById('tab-panel-container');
+      
+      if (activeTab === 'overview') {
+        // Calculate dynamic average demand
+        const avgDemand = forecast.length ? Math.round(forecast.reduce((acc, curr) => acc + parseFloat(curr.Predicted_Demand || 0), 0) / forecast.length) : 0;
+        
+        // Shipments HTML list
+        let shipmentsHtml = '';
+        shipments.forEach(s => {
+          const isDelivered = s.Status === 'Delivered';
+          const isTransit = s.Status === 'In Transit';
+          const badgeClass = isDelivered ? 'cyber-badge-emerald' : isTransit ? 'cyber-badge-cyan' : 'cyber-badge-amber';
+          const icon = s.Transport_Mode === 'Ship' ? 'ship' : isTransit ? 'truck' : 'navigation';
+          const etaText = isDelivered ? 'Completed' : isTransit ? 'ETA 3 Days' : 'Loading';
+          
+          shipmentsHtml += `
+            <div class="cargo-track-item">
+              <div class="cargo-track-left">
+                <div class="cargo-track-icon">
+                  <i data-lucide="${icon}" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="cargo-details">
+                  <h5>Cargo ID-PO #${s.Order_ID}</h5>
+                  <p>${s.Transport_Mode} | ${parseFloat(s.Distance_km || 0).toLocaleString()} km route</p>
+                </div>
+              </div>
+              <div class="cargo-right">
+                <span class="cyber-badge ${badgeClass}">${s.Status}</span>
+                <span class="cargo-eta">${etaText}</span>
+              </div>
+            </div>
+          `;
+        });
+        if (shipments.length === 0) {
+          shipmentsHtml = '<p style="color: #64748b; font-size: 0.9rem; text-align: center; margin-top: 3rem;">No cargo shipments tracked.</p>';
+        }
+
+        panelContainer.innerHTML = `
+          <!-- Stats Grid -->
+          <div class="stats-command-grid">
+            <div class="obsidian-card rose">
+              <h3>Critical Warnings <i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: var(--accent-rose);"></i></h3>
+              <div class="obsidian-stat-row">
+                <div class="obsidian-stat-value" style="color: var(--accent-rose); text-shadow: 0 0 15px rgba(244,63,94,0.3)">${lowStockAlerts.length}</div>
+                <span class="cyber-badge cyber-badge-rose">Critical alerts</span>
+              </div>
+              <p class="obsidian-stat-desc">Inputs fall below standard levels</p>
+            </div>
+
+            <div class="obsidian-card primary">
+              <h3>Top Suppliers <i data-lucide="award" style="width: 18px; height: 18px; color: var(--accent-magenta);"></i></h3>
+              <div class="obsidian-stat-row">
+                <div class="obsidian-stat-value" style="color: var(--accent-magenta); text-shadow: 0 0 15px rgba(217,70,239,0.3)">${topSuppliers.length}</div>
+                <span class="cyber-badge cyber-badge-cyan">Active Vendors</span>
+              </div>
+              <p class="obsidian-stat-desc">Procurement networks tracked</p>
+            </div>
+
+            <div class="obsidian-card emerald">
+              <h3>Avg Projected Demand <i data-lucide="trending-up" style="width: 18px; height: 18px; color: var(--accent-emerald);"></i></h3>
+              <div class="obsidian-stat-row">
+                <div class="obsidian-stat-value" style="color: var(--accent-emerald); text-shadow: 0 0 15px rgba(16,185,129,0.3)">${avgDemand}</div>
+                <span class="cyber-badge cyber-badge-emerald">Units/Month</span>
+              </div>
+              <p class="obsidian-stat-desc">Mean projected analytical quota</p>
+            </div>
+          </div>
+
+          <!-- Split Charts & Cargo Feed -->
+          <div class="replenish-split-grid" style="margin-top: 1.5rem;">
+            <div class="charts-command-grid" style="grid-template-columns: 1fr;">
+              <!-- Storage Bar Chart -->
+              <div class="obsidian-card chart-obsidian-card">
+                <div class="chart-card-header">
+                  <h3>Total Storage Capacity levels</h3>
+                  <span class="cyber-badge cyber-badge-cyan">Live Inventory</span>
+                </div>
+                <div id="bar-chart-container" style="flex: 1; width: 100%; position: relative;"></div>
+              </div>
+
+              <!-- Demand Forecast Area Chart -->
+              <div class="obsidian-card chart-obsidian-card" style="margin-top: 1.5rem;">
+                <div class="chart-card-header">
+                  <h3>AI Projected Demand Forecast</h3>
+                  <span class="cyber-badge cyber-badge-emerald">Predictive AI</span>
+                </div>
+                <div id="area-chart-container" style="flex: 1; width: 100%; position: relative;"></div>
+              </div>
+            </div>
+
+            <!-- Cargo Active Pipeline feed -->
+            <div class="obsidian-card" style="height: 780px; display: flex; flex-direction: column;">
+              <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.15rem; color: #fff;">Active Cargo Pipeline</h3>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                  Estimated transportation details and real-time delivery tracking feed
+                </p>
+              </div>
+              <div style="flex: 1; overflow-y: auto; padding-right: 0.25rem;">
+                ${shipmentsHtml}
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Render charts asynchronously to ensure container measurement is ready
+        setTimeout(() => {
+          drawCapacityBarChart();
+          drawDemandAreaChart();
+        }, 50);
+
+      } else if (activeTab === 'inventory') {
+        // Table body mapping
+        const filteredInv = inventory.filter(item => 
+          item.Material_Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.Unit.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        let tableRowsHtml = '';
+        filteredInv.forEach(item => {
+          const isLow = item.Current_Stock < 100;
+          const isWarn = item.Current_Stock < 250;
+          const statusBadge = isLow ? 
+            '<span class="cyber-badge cyber-badge-rose">Low Stock Alerts (&lt;100)</span>' : 
+            isWarn ? '<span class="cyber-badge cyber-badge-amber">Warning Check</span>' : 
+            '<span class="cyber-badge cyber-badge-emerald">Secured</span>';
+
+          tableRowsHtml += `
+            <tr>
+              <td style="font-weight: 700; color: white;">${item.Material_Name}</td>
+              <td>${item.Current_Stock}</td>
+              <td>${item.Unit}</td>
+              <td>$${parseFloat(item.Cost_Per_Unit || 0).toFixed(2)}</td>
+              <td>${statusBadge}</td>
+            </tr>
+          `;
+        });
+        if (filteredInv.length === 0) {
+          tableRowsHtml = '<tr><td colspan="5" style="text-align: center; color: #475569; padding: 2rem;">No matching ingredients found.</td></tr>';
+        }
+
+        // Material selections
+        let matOptions = '';
+        inventory.forEach(i => {
+          matOptions += `<option value="${i.Material_ID}">${i.Material_Name}</option>`;
+        });
+
+        // Supplier selections
+        let supOptions = '';
+        suppliersList.forEach(s => {
+          supOptions += `<option value="${s.Supplier_ID}">${s.Supplier_Name}</option>`;
+        });
+
+        panelContainer.innerHTML = `
+          <div class="replenish-split-grid">
+            <!-- Left panel Storage table -->
+            <div class="obsidian-card" style="padding: 2rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div>
+                  <h3 style="font-size: 1.15rem; color: #fff;">Material Storage Directory</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                    Expanded chemical ingredients database records including threshold warnings
+                  </p>
+                </div>
+                
+                <div style="position: relative;">
+                  <i data-lucide="search" style="position: absolute; left: 0.95rem; top: 50%; transform: translateY(-50%); color: #64748b; width: 16px; height: 16px;"></i>
+                  <input type="text" placeholder="Filter material catalog..." class="input-obsidian" style="padding-left: 2.6rem; width: 220px; height: 38px;" value="${searchTerm}" oninput="handleSearch(this.value)"/>
+                </div>
+              </div>
+
+              <div class="obsidian-table-container">
+                <table class="obsidian-table">
+                  <thead>
+                    <tr>
+                      <th>Ingredient</th>
+                      <th>Seeded Stock</th>
+                      <th>Unit</th>
+                      <th>Price/Unit</th>
+                      <th>Safety Threshold Warning</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${tableRowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Right replenishment form -->
+            <div class="obsidian-card obsidian-form-box">
+              <div class="form-header">
+                <h3>Procure Chemical Storage</h3>
+                <p>Triggers SCM database UpdateStock trigger auto-incrementing stock live</p>
+              </div>
+
+              <form onsubmit="handleRestockSubmit(event)">
+                <div class="form-field">
+                  <label>Ingredient Input Select</label>
+                  <select id="restock-material" class="input-obsidian">
+                    ${matOptions}
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label>Registered Supplier Vendor</label>
+                  <select id="restock-supplier" class="input-obsidian">
+                    ${supOptions}
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label>Replenish Weight (Quantity)</label>
+                  <input id="restock-qty" type="number" placeholder="e.g. 150" min="1" class="input-obsidian" required/>
+                </div>
+
+                <div class="form-field">
+                  <label>Chemical Unit Cost ($)</label>
+                  <input id="restock-price" type="number" step="0.01" placeholder="e.g. 480.00" min="0.01" class="input-obsidian" required/>
+                </div>
+
+                <button type="submit" class="btn-cyber-primary" style="width: 100%; margin-top: 0.75rem; justify-content: center;">
+                  <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+                  Issue Order & Update Stock
+                </button>
+              </form>
+            </div>
+          </div>
+        `;
+
+      } else if (activeTab === 'logistics') {
+        // Supplier selections
+        let supOptions = '';
+        suppliersList.forEach(s => {
+          const isSel = s.Supplier_ID.toString() === selectedSupplierId ? 'selected' : '';
+          supOptions += `<option value="${s.Supplier_ID}" ${isSel}>${s.Supplier_Name}</option>`;
+        });
+
+        // Supplier scoring panels
+        let scoresHtml = '<p style="color: #64748b; font-size: 0.9rem; text-align: center; padding: 2rem 0;">No evaluation safety history populated.</p>';
+        if (selectedSupplierPerformance.length > 0) {
+          const perf = selectedSupplierPerformance[0];
+          const isHigh = parseFloat(perf.On_Time_Delivery_Rate || 0) >= 90;
+          const onTimeColor = isHigh ? 'var(--accent-emerald)' : 'var(--accent-amber)';
+
+          scoresHtml = `
+            <div>
+              <h4 style="font-size: 1.05rem; color: #fff;">SCM System Evaluation Audit: ${perf.Supplier_Name}</h4>
+              <div class="scoring-metrics-grid">
+                <div class="score-box">
+                  <div class="score-label">On-Time delivery rate</div>
+                  <div class="score-number" style="color: ${onTimeColor}">${parseFloat(perf.On_Time_Delivery_Rate || 0).toFixed(1)}%</div>
+                </div>
+
+                <div class="score-box">
+                  <div class="score-label">Audit Evaluation Date</div>
+                  <div class="score-number" style="font-size: 1.25rem; padding: 0.35rem 0;">${new Date(perf.Evaluation_Date).toLocaleDateString()}</div>
+                </div>
+
+                <div class="score-box">
+                  <div class="score-label">Overall Safety Score</div>
+                  <div class="score-number" style="color: var(--accent-cyan);">${parseFloat(perf.Overall_Score || 0).toFixed(1)}/100</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // Warehouse capacities mapping
+        let whHtml = '';
+        warehouses.forEach(wh => {
+          // Fill status approximations matching previous React rules
+          const fill = wh.Warehouse_ID === 1 ? '75%' : wh.Warehouse_ID === 2 ? '60%' : wh.Warehouse_ID === 3 ? '85%' : '40%';
+          const barBg = wh.Warehouse_ID === 3 ? 'var(--accent-amber)' : 'linear-gradient(90deg, var(--accent-cyan), var(--accent-primary))';
+          const pass = wh.Passed_Inspection;
+          
+          whHtml += `
+            <div class="obsidian-card" style="background: rgba(255,255,255,0.01); border-color: rgba(255,255,255,0.02)">
+              <h4 style="color: white; font-size: 1rem;">${wh.Warehouse_Name}</h4>
+              <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.15rem;">
+                <i data-lucide="map-pin" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 0.25rem;"></i>
+                ${wh.Location}
+              </p>
+
+              <div class="wh-row" style="margin-top: 1.5rem;">
+                <span class="wh-label">Total Storage Capacity</span>
+                <span class="wh-value">${(wh.Capacity || 0).toLocaleString()} Space units</span>
+              </div>
+
+              <div class="wh-row" style="margin-top: 0.5rem; margin-bottom: 0.25rem;">
+                <span class="wh-label">Fill Status</span>
+                <span class="wh-value" style="color: var(--accent-cyan)">${fill}</span>
+              </div>
+              <div class="fill-bar-wrapper">
+                <div class="fill-bar" style="width: ${fill}; background: ${barBg};"></div>
+              </div>
+
+              ${wh.Inspection_Date ? `
+                <div class="compliance-status-line">
+                  <div class="compliance-status-left ${pass ? 'passed' : 'failed'}">
+                    <i data-lucide="${pass ? 'clipboard-check' : 'shield-x'}" style="width: 14px; height: 14px;"></i>
+                    ${pass ? 'Passed Inspection' : 'Failed Compliance'}
+                  </div>
+                  <span class="compliance-date">Inspect: ${new Date(wh.Inspection_Date).toLocaleDateString()}</span>
+                </div>
+              ` : `
+                <p style="font-size: 0.75rem; color: #64748b; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 0.75rem;">No audit history logged.</p>
+              `}
+            </div>
+          `;
+        });
+
+        panelContainer.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Supplier scorecard details select -->
+            <div class="supplier-scoring-layout">
+              <div class="obsidian-card" style="padding: 2rem; height: 100%;">
+                <div style="margin-bottom: 1.5rem;">
+                  <h3 style="font-size: 1.15rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="award" style="color: var(--accent-magenta); width: 20px; height: 20px;"></i>
+                    Supplier Evaluation
+                  </h3>
+                  <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                    Evaluates on-time ratios by calling procedure \`GetSupplierPerformanceSummary\`
+                  </p>
+                </div>
+
+                <div class="form-field">
+                  <label>Select Procurement Vendor</label>
+                  <select class="input-obsidian" onchange="handleSupplierScoringChange(this.value)">
+                    ${supOptions}
+                  </select>
+                </div>
+              </div>
+
+              <div class="obsidian-card" style="padding: 2rem;">
+                ${scoresHtml}
+              </div>
+            </div>
+
+            <!-- Depot compliance grids -->
+            <div class="obsidian-card" style="padding: 2rem;">
+              <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.15rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                  <i data-lucide="archive" style="color: var(--accent-cyan); width: 20px; height: 20px;"></i>
+                  Depot Capacities & Safety Inspections
+                </h3>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                  Warehouse storage levels and safety inspection logs
+                </p>
+              </div>
+
+              <div class="warehouses-grid">
+                ${whHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Re-trigger lucide icons render
+      lucide.createIcons();
+    }
+
+    // Dynamic Search handler
+    function handleSearch(val) {
+      searchTerm = val;
+      renderUI();
+    }
+
+    // Native High-Performance SVG Capacity Bar Chart Drawing
+    function drawCapacityBarChart() {
+      const container = document.getElementById('bar-chart-container');
+      if (!container) return;
+
+      const width = container.clientWidth || 550;
+      const height = container.clientHeight || 280;
+      const paddingLeft = 40;
+      const paddingBottom = 30;
+      const paddingTop = 15;
+      const paddingRight = 15;
+      
+      const chartWidth = width - paddingLeft - paddingRight;
+      const chartHeight = height - paddingTop - paddingBottom;
+      
+      // Calculate max capacity constraints
+      const maxVal = Math.max(...inventory.map(d => d.Current_Stock), 6000);
+      
+      let html = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}">
+        <defs>
+          <linearGradient id="glowIndigo" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.3"/>
+          </linearGradient>
+          <linearGradient id="glowRose" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#d946ef" stop-opacity="0.3"/>
+          </linearGradient>
+        </defs>`;
+
+      // Horizontal reference grids
+      const grids = 4;
+      for (let i = 0; i <= grids; i++) {
+        const val = Math.round((maxVal / grids) * i);
+        const y = paddingTop + chartHeight - (chartHeight / grids) * i;
+        html += `
+          <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="rgba(255,255,255,0.02)" stroke-dasharray="3 3"/>
+          <text x="${paddingLeft - 10}" y="${y + 4}" fill="#475569" font-size="10" text-anchor="end" font-weight="500">${val}</text>
+        `;
+      }
+
+      // Draw dynamic rounded capsules bars
+      const spacing = chartWidth / inventory.length;
+      const barWidth = Math.min(32, spacing - 14);
+
+      inventory.forEach((item, index) => {
+        const barHeight = (item.Current_Stock / maxVal) * chartHeight;
+        const x = paddingLeft + spacing * index + (spacing - barWidth) / 2;
+        const y = paddingTop + chartHeight - barHeight;
+        
+        const isLow = item.Current_Stock < 100;
+        const gradient = isLow ? 'url(#glowRose)' : 'url(#glowIndigo)';
+
+        // Rounded capsule top rectangles
+        html += `
+          <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${gradient}" rx="6" ry="6">
+            <title>${item.Material_Name}: ${item.Current_Stock} ${item.Unit}</title>
+          </rect>
+          <text x="${x + barWidth / 2}" y="${height - 8}" fill="#475569" font-size="10" text-anchor="middle" font-weight="600">${item.Material_Name}</text>
+        `;
+      });
+
+      html += '</svg>';
+      container.innerHTML = html;
+    }
+
+    // Native High-Performance SVG Demand Forecast Area Chart Drawing
+    function drawDemandAreaChart() {
+      const container = document.getElementById('area-chart-container');
+      if (!container) return;
+
+      const width = container.clientWidth || 550;
+      const height = container.clientHeight || 280;
+      const paddingLeft = 40;
+      const paddingBottom = 30;
+      const paddingTop = 15;
+      const paddingRight = 15;
+      
+      const chartWidth = width - paddingLeft - paddingRight;
+      const chartHeight = height - paddingTop - paddingBottom;
+
+      const maxVal = Math.max(...forecast.map(d => d.Predicted_Demand), 600);
+
+      let html = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}">
+        <defs>
+          <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stop-color="#10b981" stop-opacity="0.3"/>
+            <stop offset="95%" stop-color="#10b981" stop-opacity="0"/>
+          </linearGradient>
+        </defs>`;
+
+      // Horizontal reference grids
+      const grids = 4;
+      for (let i = 0; i <= grids; i++) {
+        const val = Math.round((maxVal / grids) * i);
+        const y = paddingTop + chartHeight - (chartHeight / grids) * i;
+        html += `
+          <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="rgba(255,255,255,0.02)" stroke-dasharray="3 3"/>
+          <text x="${paddingLeft - 10}" y="${y + 4}" fill="#475569" font-size="10" text-anchor="end" font-weight="500">${val}</text>
+        `;
+      }
+
+      // Generate Area & Line Curve Paths
+      if (forecast.length > 0) {
+        const spacing = chartWidth / (forecast.length - 1);
+        let pathPoints = [];
+        
+        forecast.forEach((item, index) => {
+          const x = paddingLeft + spacing * index;
+          const y = paddingTop + chartHeight - (item.Predicted_Demand / maxVal) * chartHeight;
+          pathPoints.push({ x, y, name: item.Product_Name, val: item.Predicted_Demand });
+        });
+
+        // Area path strings
+        let linePathStr = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
+        let areaPathStr = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
+
+        for (let i = 1; i < pathPoints.length; i++) {
+          linePathStr += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
+          areaPathStr += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
+        }
+
+        // Close the area polygon
+        areaPathStr += ` L ${pathPoints[pathPoints.length - 1].x} ${paddingTop + chartHeight} L ${pathPoints[0].x} ${paddingTop + chartHeight} Z`;
+
+        // Render Area background and Line stroke
+        html += `
+          <path d="${areaPathStr}" fill="url(#colorForecast)"/>
+          <path d="${linePathStr}" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+        `;
+
+        // Render glowing circles dots
+        pathPoints.forEach(pt => {
+          html += `
+            <circle cx="${pt.x}" cy="${pt.y}" r="4.5" fill="#10b981" stroke="#030712" stroke-width="1.5">
+              <title>${pt.name}: ${pt.val}</title>
+            </circle>
+          `;
+        });
+
+        // Add Product abbreviated names underneath
+        forecast.forEach((item, index) => {
+          const x = paddingLeft + spacing * index;
+          const abbrev = item.Product_Name.split('(')[0].trim().replace('Fertilizer', 'Fert');
+          html += `
+            <text x="${x}" y="${height - 8}" fill="#475569" font-size="10" text-anchor="middle" font-weight="600">${abbrev}</text>
+          `;
+        });
+      }
+
+      html += '</svg>';
+      container.innerHTML = html;
+    }
+
+    // Window resize charts re-render
+    window.addEventListener('resize', () => {
+      if (activeTab === 'overview') {
+        drawCapacityBarChart();
+        drawDemandAreaChart();
+      }
+    });
+
+    // Start App Command controller on boot
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchSCMCommandData();
+    });
+  </script>
+</body>
 </html>

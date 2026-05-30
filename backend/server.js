@@ -196,6 +196,10 @@ app.get('/api/shipments', async (req, res) => {
     else res.status(500).json({ error: 'Database error' });
 });
 
+// Serve static frontend files
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../dashboard')));
+
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
