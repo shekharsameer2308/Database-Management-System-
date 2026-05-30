@@ -10,6 +10,7 @@ app.use(express.json());
 // Create a connection pool (Use your actual DB credentials from .env)
 const pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3307,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'SCM_DB',

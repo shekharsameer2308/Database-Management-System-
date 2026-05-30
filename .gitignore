@@ -1,0 +1,13 @@
+# Local mysql temporary instance
+mysql_temp/
+
+# Build and deployment folders
+.git-deploy/
+dist/
+
+# Logs and screenshots
+dashboard_screenshot.png
+*.log
+
+# Node dependency directories
+node_modules/

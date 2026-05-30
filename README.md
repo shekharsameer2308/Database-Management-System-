@@ -2,6 +2,12 @@
 
 Welcome to the AI-Assisted Fertilizer Supply Chain Management (SCM) database project. This SQL database goes beyond standard CRUD operations by incorporating advanced supply chain analytics, demand forecasting, supplier performance scoring, and carbon emission tracking.
 
+## 🔗 Live Demo
+Access the production dashboard deployed on Vercel:
+👉 **[SCM AI Dashboard (Vercel)](https://dashboard-six-sable-18.vercel.app/)**
+
+*(Note: The live frontend queries the local Node.js API. Make sure your local backend server is running to view live database updates!)*
+
 ## Project Overview
 
 This system is designed to manage the flow of raw materials from suppliers to warehouses, track production batches, and handle customer sales orders. It is tailored for the manufacturing industry (specifically fertilizer production, e.g., Ammonia, Urea).
@@ -23,7 +29,7 @@ This project was built from scratch following a complete full-stack development 
 4. **Data Seeding & Queries**: Populated the database with realistic mock data representing a fertilizer production pipeline, and constructed complex JOINs and aggregations for the analytical views.
 5. **Backend API Development**: Built a lightweight Node.js/Express server utilizing `mysql2` to connect to the DB and serve the analytical data via RESTful JSON endpoints.
 6. **Frontend Dashboard Creation**: Initialized a React (Vite) application, implemented a modern glassmorphism design using plain CSS, and integrated `recharts` to visualize the live data.
-7. **Deployment**: Configured Vite for a base path, compiled a production build of the dashboard, and pushed it to GitHub Pages for instant sharing.
+7. **Deployment**: Deployed the modern React/Vite dashboard to Vercel for instant sharing and optimized cloud hosting.
 
 ## Project Structure
 
