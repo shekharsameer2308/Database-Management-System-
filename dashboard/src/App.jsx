@@ -268,7 +268,7 @@ function App() {
           <div className="user-avatar">SS</div>
           <div className="user-details">
             <h4>Sameer Shekhar</h4>
-            <p>Admin • DB Port 3307</p>
+            <p>Admin | DB Port 3307</p>
           </div>
         </div>
       </aside>
@@ -455,7 +455,7 @@ function App() {
                           </div>
                           <div className="cargo-details">
                             <h5>Cargo ID-PO #{s.Order_ID}</h5>
-                            <p>{s.Transport_Mode} • {parseFloat(s.Distance_km || 0).toLocaleString()} km route</p>
+                            <p>{s.Transport_Mode} | {parseFloat(s.Distance_km || 0).toLocaleString()} km route</p>
                           </div>
                         </div>
 

@@ -2,10 +2,10 @@
 
 Welcome to the AI-Assisted Fertilizer Supply Chain Management (SCM) database project. This SQL database goes beyond standard CRUD operations by incorporating advanced supply chain analytics, demand forecasting, supplier performance scoring, and carbon emission tracking.
 
-## 🔗 Live Demo
+## Live Demo
 
 Access the production dashboard deployed on Vercel:
-👉 **[SCM AI Dashboard (Vercel)](https://dashboard-six-sable-18.vercel.app/)**
+**[SCM AI Dashboard (Vercel)](https://dashboard-six-sable-18.vercel.app/)**
 
 *(Note: The live frontend queries the local Node.js API. Make sure your local backend server is running to view live database updates!)*
 
@@ -37,16 +37,16 @@ This project was built from scratch following a complete full-stack development 
 
 ```text
 database folder/
-├── schema/
-│   ├── 01_tables.sql           # Core schema (Suppliers, Raw_Materials, Orders, etc.)
-│   ├── 02_advanced_tables.sql  # Forecasting, Emissions, Supplier Performance
-│   ├── 03_triggers.sql         # Automation logic (Stock updates)
-│   ├── 04_procedures.sql       # Stored procedures (Alerts, Summaries)
-│   └── 05_seed_data.sql        # Dummy data for testing
-├── queries/
-│   └── analytical_queries.sql  # Useful queries for reporting and dashboards
-├── backend/                    # Node.js API server
-└── dashboard/                  # React Frontend application
+|-- schema/
+|   |-- 01_tables.sql           # Core schema (Suppliers, Raw_Materials, Orders, etc.)
+|   |-- 02_advanced_tables.sql  # Forecasting, Emissions, Supplier Performance
+|   |-- 03_triggers.sql         # Automation logic (Stock updates)
+|   |-- 04_procedures.sql       # Stored procedures (Alerts, Summaries)
+|   |-- 05_seed_data.sql        # Dummy data for testing
+|-- queries/
+|   |-- analytical_queries.sql  # Useful queries for reporting and dashboards
+|-- backend/                    # Node.js API server
+|-- dashboard/                  # React Frontend application
 ```
 
 ## Setup Instructions
