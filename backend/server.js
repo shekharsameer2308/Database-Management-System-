@@ -106,6 +106,16 @@ app.post('/api/inventory/replenish', async (req, res) => {
     if (!supplierId || !materialId || !quantity || !unitPrice) {
         return res.status(400).json({ error: 'Missing required parameters' });
     }
+
+    // Strict input type validation & parsing
+    const sId = parseInt(supplierId);
+    const mId = parseInt(materialId);
+    const qty = parseInt(quantity);
+    const price = parseFloat(unitPrice);
+
+    if (isNaN(sId) || isNaN(mId) || isNaN(qty) || isNaN(price) || qty <= 0 || price <= 0) {
+        return res.status(400).json({ error: 'Invalid parameters: ID, quantity, and unit price must be positive numbers' });
+    }
     
     let connection;
     try {
@@ -118,14 +128,14 @@ app.post('/api/inventory/replenish', async (req, res) => {
         
         const [poResult] = await connection.query(
             'INSERT INTO Purchase_Orders (Supplier_ID, Order_Date, Expected_Delivery, Status) VALUES (?, ?, ?, ?)',
-            [supplierId, orderDate, expectedDelivery, 'Pending']
+            [sId, orderDate, expectedDelivery, 'Pending']
         );
         const poId = poResult.insertId;
 
         // 2. Insert into Purchase_Order_Details (This will fire the UpdateStock database trigger!)
         await connection.query(
             'INSERT INTO Purchase_Order_Details (PO_ID, Material_ID, Quantity, Unit_Price) VALUES (?, ?, ?, ?)',
-            [poId, materialId, quantity, unitPrice]
+            [poId, mId, qty, price]
         );
 
         await connection.commit();
@@ -142,8 +152,13 @@ app.post('/api/inventory/replenish', async (req, res) => {
 // 8. Get Supplier Performance Summary (Stored Procedure CALL GetSupplierPerformanceSummary(?))
 app.get('/api/suppliers/performance/:id', async (req, res) => {
     const supplierId = req.params.id;
+    const sId = parseInt(supplierId);
+    if (isNaN(sId)) {
+        return res.status(400).json({ error: 'Invalid supplier ID parameter: must be a number' });
+    }
+
     try {
-        const [rows] = await pool.query('CALL GetSupplierPerformanceSummary(?)', [supplierId]);
+        const [rows] = await pool.query('CALL GetSupplierPerformanceSummary(?)', [sId]);
         if (rows && rows[0]) {
             res.json(rows[0]);
         } else {

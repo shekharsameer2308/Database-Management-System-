@@ -455,7 +455,7 @@ function App() {
                           </div>
                           <div className="cargo-details">
                             <h5>Cargo ID-PO #{s.Order_ID}</h5>
-                            <p>{s.Transport_Mode} • {parseFloat(s.Distance_km).toLocaleString()} km route</p>
+                            <p>{s.Transport_Mode} • {parseFloat(s.Distance_km || 0).toLocaleString()} km route</p>
                           </div>
                         </div>
 
@@ -531,7 +531,7 @@ function App() {
                           <td style={{ fontWeight: 700, color: 'white' }}>{item.Material_Name}</td>
                           <td>{item.Current_Stock}</td>
                           <td>{item.Unit}</td>
-                          <td>${parseFloat(item.Cost_Per_Unit).toFixed(2)}</td>
+                          <td>${parseFloat(item.Cost_Per_Unit || 0).toFixed(2)}</td>
                           <td>
                             {item.Current_Stock < 100 ? (
                               <span className="cyber-badge cyber-badge-rose">Low Stock Alerts (&lt;100)</span>
@@ -669,8 +669,8 @@ function App() {
                           <div className="scoring-metrics-grid">
                             <div className="score-box">
                               <div className="score-label">On-Time delivery rate</div>
-                              <div className="score-number" style={{ color: perf.On_Time_Delivery_Rate >= 90 ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>
-                                {parseFloat(perf.On_Time_Delivery_Rate).toFixed(1)}%
+                              <div className="score-number" style={{ color: (perf.On_Time_Delivery_Rate || 0) >= 90 ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>
+                                {parseFloat(perf.On_Time_Delivery_Rate || 0).toFixed(1)}%
                               </div>
                             </div>
 
@@ -684,7 +684,7 @@ function App() {
                             <div className="score-box">
                               <div className="score-label">Overall Safety Score</div>
                               <div className="score-number" style={{ color: 'var(--accent-cyan)' }}>
-                                {parseFloat(perf.Overall_Score).toFixed(1)}/100
+                                {parseFloat(perf.Overall_Score || 0).toFixed(1)}/100
                               </div>
                             </div>
                           </div>
