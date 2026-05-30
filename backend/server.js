@@ -155,6 +155,32 @@ app.get('/api/suppliers/performance/:id', async (req, res) => {
     }
 });
 
+// 9. Get Warehouses and Safety Compliance
+app.get('/api/warehouses', async (req, res) => {
+    const data = await queryDB(`
+        SELECT w.Warehouse_ID, w.Warehouse_Name, w.Location, w.Capacity,
+               c.Inspection_Date, c.Inspector_Name, c.Passed_Inspection, c.Notes
+        FROM Warehouses w
+        LEFT JOIN Safety_Compliance c ON w.Warehouse_ID = c.Warehouse_ID
+        ORDER BY w.Warehouse_Name ASC
+    `);
+    if (data) res.json(data);
+    else res.status(500).json({ error: 'Database error' });
+});
+
+// 10. Get Active Shipments and Logistics Route Emissions
+app.get('/api/shipments', async (req, res) => {
+    const data = await queryDB(`
+        SELECT s.Shipment_ID, s.Order_ID, s.Shipment_Date, s.Delivery_Date, s.Status,
+               c.Transport_Mode, c.Distance_km, c.Estimated_CO2_kg
+        FROM Shipments s
+        LEFT JOIN Carbon_Emissions c ON s.Shipment_ID = c.Shipment_ID
+        ORDER BY s.Shipment_Date DESC
+    `);
+    if (data) res.json(data);
+    else res.status(500).json({ error: 'Database error' });
+});
+
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
