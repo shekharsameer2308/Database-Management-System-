@@ -13,6 +13,18 @@ This system is designed to manage the flow of raw materials from suppliers to wa
 * **Automation (Triggers):** Automatically updating stock levels upon receiving purchase orders.
 * **Stored Procedures:** For generating quick alerts (e.g., low stock warnings).
 
+## Methodology: How It Was Built
+
+This project was built from scratch following a complete full-stack development lifecycle:
+
+1. **Database Schema Design**: Created the core tables for standard Supply Chain entities (Suppliers, Raw Materials, Warehouses, Purchase Orders).
+2. **Advanced Analytics & AI Forecasting**: Designed specialized tables to hold Carbon Emissions data for sustainability tracking and AI Demand Forecasting data for predictive logistics.
+3. **Database Automation**: Implemented SQL triggers (e.g., `UpdateStock`) to automatically adjust inventory upon receiving new shipments, and stored procedures for alerting on low stock.
+4. **Data Seeding & Queries**: Populated the database with realistic mock data representing a fertilizer production pipeline, and constructed complex JOINs and aggregations for the analytical views.
+5. **Backend API Development**: Built a lightweight Node.js/Express server utilizing `mysql2` to connect to the DB and serve the analytical data via RESTful JSON endpoints.
+6. **Frontend Dashboard Creation**: Initialized a React (Vite) application, implemented a modern glassmorphism design using plain CSS, and integrated `recharts` to visualize the live data.
+7. **Deployment**: Configured Vite for a base path, compiled a production build of the dashboard, and pushed it to GitHub Pages for instant sharing.
+
 ## Project Structure
 
 ```text
